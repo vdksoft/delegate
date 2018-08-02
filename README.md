@@ -1,35 +1,29 @@
-C++ Delegate
-============
+# delegate
 
-## Introduction
+Class template `vdk::delegate` is a general-purpose polymorphic function wrapper. Instances of `delegate` can store and invoke any function-like entity with specified signature, such as functions, lambda expressions, bind expressions, or other function objects.
 
-A delegate is a class that represents references to functions with a particular parameter list and return type. When a delegate is instantiated, it can be associated with any function with a compatible signature and return type. This function can be invoked later through the delegate instance. In short, a delegate is a form of type-safe function pointer that specifies a function to call and optionally an object to call this function on.
+`delegate` satisfies the requirements of MoveConstructible and MoveAssignable, but not the requirements of either CopyConstructible or CopyAssignable. Because of this, stored function object does not have to be copyable; move-only type would suffice.
 
-## Overview
+`delegate` instances can be compared. Two delegates are equal if they both are empty, or if they both contain targets of exactly the same static type with accessible equality comparison operator and the result of their comparison returns `true`. As a consequence, two delegates are not equal if only one of them is empty, or they contain targets of different static types, or the result of comparison of stored targets returns `false`, or the target's type does not provide accessible comparison operator.
 
-**vdk::delegate** is an implementation of delegate concept for C++. It is a general-purpose type-safe function pointer wrapper. Instances of **vdk::delegate** can store, copy, and invoke pointers to any callable target such as free (global) function, static member function of some class (static method), member function of some class (method), function object (functor), or lambda. Any of those that matches the delegate type – has a compatible signature and return type, can be assigned to the delegate and invoked later.
+To reduce dynamic memory allocation `delegate` implements small buffer optimization technique. When size of a stored callable target is `<= sizeof(ptr_to_any_callable) + sizeof(ptr_to_any_object)` and its move-operations are `noexcept`, small buffer optimization is guaranteed. Such targets are always directly stored inside delegate's internal buffer and no dynamic memory allocation takes place. However, if a target is too large to fit into delegate, or if its move operations may throw, the required memory is allocated dynamically. This implies that pointers to functions are always stored locally within a delegate instance.
 
-To assign some function / method / functor to **vdk::delegate** instance user passes function pointer / object pointer and method pointer / functor pointer to the delegate’s constructor. To invoke the delegate *"operator()"* is used. If target function assigned to the delegate has an argument list, all arguments must be passed into the *operator()*.
+A signature given to `delegate` is used to define its function call operator. Any qualifiers and | or specifiers in the signature are applied to the delegate's function call operator and the target is invoked through the specified call path.
 
-Any delegate can be in one of two states: either it is associated with some target function or it is empty. In latter case it is equal to null pointer. Attempting to invoke a null delegate results in undefined behavior, just like attempting to dereference regular null pointer.
+Trying to invoke a delegate without a target results in assertion being triggered. If exceptions on failed dynamic memory allocations should be avoided, one could use experimental functionality - custom global memory resource in `vdk::memory::delegate` namespace.
 
-**vdk::delegate** satisfies the requirements of Copy-constructible and Copy-assignable, so it is possible to store instances of this class in Standard Library containers. It is also possible to compare delegates for equality. Two delegates are considered to be equal if they point to the same function / object and method / functor. **vdk::delegate** is quite fast and does not use any dynamic memory allocation at all. On all main platforms it’s size is either equal or less than the size of std::function.
+## Usage:
 
-In order to use this library, compiler must be compatible with at least C++11 Standard. **vdk::delegate** relies on Standard C++ only, and does not use any hacks, non-standard extensions or third party libraries.
+**Note!** `vdk::delegate` requires a compiler that supports **C++17** standard.
 
-## Design Goals
+To use `delegate` just include `delegate.h` into your project and you are good to go.
 
-1. Delegate must be as simple to use as possible, and must have clean and intuitive syntax;
-2. Delegate must behave as generalized function pointer, without any unnecessary functionality;
-3. Creation, copying, assigning, and invoking delegate instances must be as fast as possible;
-4. Delegate must not use any dynamic memory allocation;
-5. Delegate must rely on Standard C++ only without any non-standard extensions, hacks, or third party libraries;
-6. Delegate instances must be comparable to identify whether they point to the same function;
-7. Delegate must be copy-constructible and copy-assignable to be used in Standard containers;
-8. Delegate must be able to work with methods with qualifiers: *const*, *volatile*, *const volatile*.
+GoogleTest is required to build and run tests. CMake files are provided to simplify the process. If you already have a copy of GoogleTest framework, just run CMake and set `GTEST_SOURCE_DIR` cache variable to point to the directory that contains your GoogleTest sources. If you don't have GoogleTest sources, CMake will download and compile them automatically.
 
-## Performance
+`demo` directory contains code examples that can serve as a tutorial for learning how to use `delegate`.
 
-Performance of **vdk::delegate** was measured on Windows (Visual Studio 2015 CE) and Linux (GCC 4.8.5) platforms in so called "release" builds (with optimizations). Tests showed that performance of **vdk::delegate** is almost identical to two pointer dereference operations. Such overhead is not that much even for performance critical applications, so it should be acceptable in majority of cases.
+## [API documentation](docs/delegate.md)
 
-### **Documentation, tutorial and API reference can be found in the package.**
+## License:
+
+This software is licensed under the MIT License.
